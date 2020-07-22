@@ -1,4 +1,7 @@
+from unittest import TestCase
+
 import pytest
+from pandas import DataFrame
 from pytest import fixture
 from inspect import cleandoc
 
@@ -118,6 +121,13 @@ class TestSelectedArea:
 
     def test_divide_cell(self):
         pass
+
+class TestDataTable(TestCase):
+    def test_set_properly_from_pandas(self):
+        data_frame = DataFrame({"col1": [1, 3], "col2": [2, 4]}, index=["row1", "row2"])
+
+        DataTable(data=data_frame, caption="", highlight=True)
+
 
 
 # General Table build tests

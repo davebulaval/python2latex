@@ -1,17 +1,22 @@
-import numpy as np
-from python2latex import TexEnvironment, TexCommand, build, bold, italic
-from python2latex import FloatingTable, FloatingEnvironmentMixin
+from typing import Union, List
 
+import numpy as np
+import pandas as pd
+
+from python2latex import FloatingTable, FloatingEnvironmentMixin
+from python2latex import TexEnvironment, TexCommand, build, bold, italic
 
 """
 TODO:
     - Convert 'multicell' into Multirow and Multicol Tex commands
 """
 
+
 class Rule(TexCommand):
     """
     Simple rule object to handle rules added to tables.
     """
+
     def __init__(self, start, end, trim):
         """
         Args:
@@ -31,7 +36,7 @@ class Rule(TexCommand):
         rule = super().build()
         if self.trim:
             rule += f"({self.trim})"
-        rule += f"{{{self.start+1}-{self.end}}}"
+        rule += f"{{{self.start + 1}-{self.end}}}"
         return rule
 
 
@@ -46,7 +51,9 @@ class Table(FloatingEnvironmentMixin, super_class=FloatingTable):
     TODO:
         - Maybe: Add a 'insert_row' and 'insert_column' methods.
     """
-    def __init__(self, shape=(1,1), alignment='c', float_format='.2f', position='h!', as_float_env=True, top_rule=True, bottom_rule=True, label=''):
+
+    def __init__(self, shape=(1, 1), alignment='c', float_format='.2f', position='h!', as_float_env=True, top_rule=True,
+                 bottom_rule=True, label=''):
         """
         Args:
             shape (tuple of 2 ints): Shape of the table.
@@ -67,7 +74,7 @@ class Table(FloatingEnvironmentMixin, super_class=FloatingTable):
         self.bottom_rule = bottom_rule
 
         self.shape = shape
-        self.alignment = [alignment]*shape[1] if len(alignment) == 1 else alignment
+        self.alignment = [alignment] * shape[1] if len(alignment) == 1 else alignment
         self.float_format = float_format
         self.data = np.full(shape, '', dtype=object)
 
@@ -95,19 +102,22 @@ class Table(FloatingEnvironmentMixin, super_class=FloatingTable):
             start_i, stop_i, step = idx[0].indices(self.shape[0])
             start_j, stop_j, step = idx[1].indices(self.shape[1])
 
-            table_format[start_i, slice(start_j, stop_j-1)] = ''
+            table_format[start_i, slice(start_j, stop_j - 1)] = ''
             cell_shape = table_format[idx].shape
 
             if start_i == stop_i - 1:
-                self.data[start_i, start_j] = f"\\multicolumn{{{cell_shape[1]}}}{{{h_align}}}{{{self.data[start_i, start_j]}}}"
+                self.data[
+                    start_i, start_j] = f"\\multicolumn{{{cell_shape[1]}}}{{{h_align}}}{{{self.data[start_i, start_j]}}}"
             else:
                 shift = ''
                 if v_shift:
                     shift = f'[{v_shift}]'
-                self.data[start_i, start_j] = f"\\multirow{{{cell_shape[0]}}}{{{v_align}}}{shift}{{{self.data[start_i, start_j]}}}"
+                self.data[
+                    start_i, start_j] = f"\\multirow{{{cell_shape[0]}}}{{{v_align}}}{shift}{{{self.data[start_i, start_j]}}}"
 
             if start_j < stop_j - 1 and start_i < stop_i - 1:
-                self.data[start_i, start_j] = f"\\multicolumn{{{cell_shape[1]}}}{{{h_align}}}{{{self.data[start_i, start_j]}}}"
+                self.data[
+                    start_i, start_j] = f"\\multicolumn{{{cell_shape[1]}}}{{{h_align}}}{{{self.data[start_i, start_j]}}}"
 
         return table_format
 
@@ -118,7 +128,7 @@ class Table(FloatingEnvironmentMixin, super_class=FloatingTable):
             for j, value in enumerate(row):
                 if isinstance(value, float):
                     value = f'{{value:{self.float_format}}}'.format(value=value)
-                self.data[i,j] = build(value, self)
+                self.data[i, j] = build(value, self)
 
         # Apply highlights
         for i, j, highlight in self.highlights:
@@ -126,10 +136,10 @@ class Table(FloatingEnvironmentMixin, super_class=FloatingTable):
                 command = bold
             elif highlight == 'italic':
                 command = italic
-            self.data[i,j] = command(self.data[i,j])
+            self.data[i, j] = command(self.data[i, j])
 
         # Build the tabular
-        table_format = np.array([[' & ']*(self.shape[1]-1) + [r'\\']]*self.shape[0], dtype=object)
+        table_format = np.array([[' & '] * (self.shape[1] - 1) + [r'\\']] * self.shape[0], dtype=object)
         table_format = self._apply_multicells(table_format)
         for i, (row, row_format) in enumerate(zip(self.data, table_format)):
             self.tabular.body.append(''.join(str(build(item, self)) for pair in zip(row, row_format) for item in pair))
@@ -151,6 +161,7 @@ class SelectedArea:
     """
     Represents a selected area in a table. Contains a reference to the actual table and methods to apply on an area of the table.
     """
+
     def __init__(self, table, idx):
         self.table = table
         self.slices = self._convert_idx_to_slice(idx)
@@ -161,14 +172,15 @@ class SelectedArea:
         else:
             i, j = idx, slice(None)
         if isinstance(i, int):
-            i = slice(i, i+1)
+            i = slice(i, i + 1)
         if isinstance(j, int):
-            j = slice(j, j+1)
+            j = slice(j, j + 1)
         return i, j
 
     @property
     def data(self):
         return self.table.data[self.slices]
+
     @data.setter
     def data(self, value):
         self.table.data[self.slices] = value
@@ -215,7 +227,7 @@ class SelectedArea:
 
         if i not in self.table.rules:
             self.table.rules[i] = []
-        self.table.rules[i].append(Rule(j_start, j_stop, r+l))
+        self.table.rules[i].append(Rule(j_start, j_stop, r + l))
 
         return self
 
@@ -234,9 +246,9 @@ class SelectedArea:
         self.table.add_package('multicol')
         self.table.add_package('multirow')
 
-        self.data = '' # Erase old value
+        self.data = ''  # Erase old value
         multicell_params = (self.slices, v_align, h_align, v_shift)
-        self.table.multicells.append(multicell_params) # Save position of multiple cells span
+        self.table.multicells.append(multicell_params)  # Save position of multiple cells span
 
         self.table.data[self.idx[0]] = value
 
@@ -286,14 +298,14 @@ class SelectedArea:
                 elif isinstance(value, (float, int)) and np.isclose(value, best, rtol, atol):
                     best_idx.append((i, j))
 
-        if best_idx[0][0] is None: return # No best have been found (i.e. no floats or ints in selected area)
+        if best_idx[0][0] is None: return  # No best have been found (i.e. no floats or ints in selected area)
         start_i, start_j = self.idx[0]
         for i, j in best_idx:
-            self.table.highlights.append((i+start_i, j+start_j, highlight))
+            self.table.highlights.append((i + start_i, j + start_j, highlight))
 
         return self
 
-    def divide_cell(self, shape=(1,1), alignment='c', float_format='.2f'):
+    def divide_cell(self, shape=(1, 1), alignment='c', float_format='.2f'):
         """
         Divides the selected cell in another subtable. Useful for long title to manually cut for example.
 
@@ -308,3 +320,38 @@ class SelectedArea:
         subtable = Table(shape, alignment, float_format, as_float_env=False, bottom_rule=False, top_rule=False)
         self.data = subtable
         return subtable
+
+
+class DataTable(Table, super_class=FloatingTable):
+    def __init__(self, data: Union[pd.DataFrame], caption: str, columns_name: Union[List[str], None] = None,
+                 row_names: [List[str], None] = None, highlight=False, **kwargs):
+
+        if isinstance(data, pd.DataFrame):
+            col = len(data.columns)
+            row = len(data)
+        elif isinstance(data, np.ndarray):
+            pass
+
+        shape = (row + 1, col + 1)
+        super().__init__(shape, **kwargs)
+
+        self.caption = caption
+
+        if isinstance(data, pd.DataFrame):
+            self[1:, 1:] = data.to_numpy()
+        elif isinstance(data, np.ndarray):
+            self[1:, 1:] = data
+
+        if columns_name is None:
+            self[0, 1:] = data.columns
+        else:
+            self[0, 1:] = columns_name
+
+        if row_names is None:
+            self[1:, 0] = data.index
+        else:
+            self[1:, 0] = row_names
+
+        if highlight:
+            for row in range(1, row + 1):
+                self[row].highlight_best('high', 'bold')
