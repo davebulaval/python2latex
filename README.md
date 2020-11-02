@@ -11,6 +11,11 @@ The package makes use of numpy and assumes a distribution of LaTeX that uses ``p
 To install the package, simply run in your terminal the command
 
     pip install python2latex
+    
+**Install the latest development version of Python2LaTeX:**
+
+    pip install -U git+https://github.com/jsleb333/python2latex.git@dev
+
 
 ## Examples
 
